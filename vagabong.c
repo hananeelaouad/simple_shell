@@ -1,74 +1,74 @@
 #include "shell.h"
 
 /**
- **_strncpy - copies a string
- *@tazeko: the destination string to be copied to
- *@source: the source string
- *@nice: the amount of characters to be copied
- *Return: the concatenated string
+ * clear_info - initializes info_t struct
+ * @tazeko: struct address
  */
-char *_strncpy(char *tazeko, char *source, int nice)
+void clear_info(info_t *tazeko)
 {
-	int i, j;
-	char *s = tazeko;
+	tazeko->arg = NULL;
+	tazeko->argv = NULL;
+	tazeko->path = NULL;
+	tazeko->argc = 0;
+}
 
-	i = 0;
-	while (source[i] != '\0' && i < n - 1)
+/**
+ * set_info - initializes info_t struct
+ * @otipax: struct address
+ * @avenue: argument vector
+ */
+void set_info(info_t *otipax, char **avenue)
+{
+	int i = 0;
+
+	otipax->fname = avenue[0];
+	if (otipax->arg)
 	{
-		tazeko[i] = source[i];
-		i++;
-	}
-	if (i < n)
-	{
-		j = i;
-		while (j < n)
+		otipax->argv = strtow(otipax->arg, " \t");
+		if (!otipax->argv)
 		{
-			tazeko[j] = '\0';
-			j++;
+
+			otipax->argv = malloc(sizeof(char *) * 2);
+			if (otipax->argv)
+			{
+				otipax->argv[0] = _strdup(otipax->arg);
+				otipax->argv[1] = NULL;
+			}
 		}
+		for (i = 0; otipax->argv && otipax->argv[i]; i++)
+			;
+		otipax->argc = i;
+
+		replace_alias(otipax);
+		replace_vars(otipax);
 	}
-	return (s);
 }
 
 /**
- **_strncat - concatenates two strings
- *@tazeko: the first string
- *@source: the second string
- *@nice: the amount of bytes to be maximally used
- *Return: the concatenated string
+ * free_info - frees info_t struct fields
+ * @cea: struct address
+ * @alli: true if freeing all fields
  */
-char *_strncat(char *tazeko, char *source, int nice)
+void free_info(info_t *cea, int alli)
 {
-	int i, j;
-	char *s = tazeko;
-
-	i = 0;
-	j = 0;
-	while (tazeko[i] != '\0')
-		i++;
-	while (source[j] != '\0' && j < n)
+	ffree(cea->argv);
+	cea->argv = NULL;
+	cea->path = NULL;
+	if (alli)
 	{
-		tazeko[i] = source[j];
-		i++;
-		j++;
+		if (!cea->cmd_buf)
+			free(cea->arg);
+		if (cea->env)
+			free_list(&(cea->env));
+		if (cea->history)
+			free_list(&(cea->history));
+		if (cea->alias)
+			free_list(&(cea->alias));
+		ffree(cea->environ);
+			cea->environ = NULL;
+		bfree((void **)cea->cmd_buf);
+		if (cea->readfd > 2)
+			close(cea->readfd);
+		_putchar(BUF_FLUSH);
 	}
-	if (j < n)
-		tazeko[i] = '\0';
-	return (s);
-}
-
-/**
- **_strchr - locates a character in a string
- *@sick: the string to be parsed
- *@clear: the character to look for
- *Return: (sick) a pointer to the memory area s
- */
-char *_strchr(char *sick, char clear)
-{
-	do {
-		if (*sick == clear)
-			return (sick);
-	} while (*sick++ != '\0');
-
-	return (NULL);
 }

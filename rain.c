@@ -1,68 +1,170 @@
-#inclu "shell.h"
-/**
- * interactive - ghadi terja3 b  1 ila kan shell is interactive mode
- * 1 will returned ila kan intractive mode and 0 will be returned ila kan otherwise mn hadok li endna 
- */
-int intractive(info_t *jh)
-{
-	if (isatty(STDIN_FILENO)&& jh->readfd >= 0 && jh->readfd<=2){
-		return 1;
-	}else{
-		return 0;
-	}
-}
+#include "shell.h"
 
 /**
- * is_delim katchof  wach  character rah  delimeter
- * @c l7aref li ghadi nchofoh
- * @delim: hiya delim parameter li ghadi nkhadmo bih 
- * Return: 1 ila kant s7i7a , 0 ila kant ghalta 
+ * input_buf - buffers chained commands
+ * @tach: parameter struct
+ * @bu: address of buffer
+ * @leno: address of len var
+ *
+ * Return: bytes read
  */
-int is_delim(char c, char *ce)
+ssize_t input_buf(info_t *tach, char **bu, size_t *leno)
 {
-	while (*ce)
-		if (*ce++ == c)
-			return (1);
-	return (0);
-}
+	ssize_t r = 0;
+	size_t len_p = 0;
 
-/**
- * _isalpha katchof lina wach dak l7aref wach char
- * @lettero: howa l input deyal l7aref 
- * ghadi terja3 lina b 1 ila kan ah we b 0 ila kan lae 
- */
-
-int _isalpha(int lettero)
-{
-	if((lettero>='a'&& lettero<='z')|| (lettero 'A' && lettero 'Z')){
-		return (1);
-	}else{
-		return (0);
-	}
-}
-
-
-
-/**_atoi katred lina string l int
- * @new_string_from_int hiya bach ghadi nkhadmo 
- * ila reja3 lina 1 rah se7i7 ila reja3 lina 0 rah ghalet 
- */
-
-int _atoi(char *new_string_from_int)
-{
-	int ichara=1;
-	unsigned int kharij=0;
-	while (*new_string_from_int != '\0'){
-		if(*new_string_from_int == '-'){
-			ichara = -1;
-			new_string_from_int ++;
-			continue;
-		}else if (*new_string_from_int < '0' || *new_string_from_int > '9') {
-			new_string_from_int++;
-			continue;
+	if (!*leno) /* if nothing left in the buffer, fill it */
+	{
+		/*bfree((void **)tach->cmd_buf);*/
+		free(*bu);
+		*bu = NULL;
+		signal(SIGINT, sigintHandler);
+#if USE_GETLINE
+		r = getline(bu, &len_p, stdin);
+#else
+		r = _getline(tach, bu, &len_p);
+#endif
+		if (r > 0)
+		{
+			if ((*bu)[r - 1] == '\n')
+			{
+				(*bu)[r - 1] = '\0'; /* remove trailing newline */
+				r--;
+			}
+			tach->linecount_flag = 1;
+			remove_comments(*bu);
+			build_history_list(tach, *bu, tach->histcount++);
+			/* if (_strchr(*bu, ';')) is this a command chain? */
+			{
+				*leno = r;
+				tach->cmd_buf = bu;
+			}
 		}
-		kharij =(kharij * 10)+(*new_string_from_int -'0');
-		new_string_from_int++;
 	}
-	return (ichara * kharij);
+	return (r);
+}
+
+/**
+ * get_input - gets a line minus the newline
+ * @tach: parameter struct
+ *
+ * Return: bytes read
+ */
+ssize_t get_input(info_t *tach)
+{
+	static char *buf; /* the ';' command chain buffer */
+	static size_t i, j, len;
+	ssize_t r = 0;
+	char **buf_p = &(tach->arg), *p;
+
+	_putchar(BUF_FLUSH);
+	r = input_buf(tach, &buf, &len);
+	if (r == -1) /* EOF */
+		return (-1);
+	if (len)	/* we have commands left in the chain buffer */
+	{
+		j = i; /* init new iterator to current buf position */
+		p = buf + i; /* get pointer for return */
+
+		check_chain(tach, buf, &j, i, len);
+		while (j < len) /* iterate to semicolon or end */
+		{
+			if (is_chain(tach, buf, &j))
+				break;
+			j++;
+		}
+
+		i = j + 1; /* increment past nulled ';'' */
+		if (i >= len) /* reached end of buffer? */
+		{
+			i = len = 0; /* reset position and length */
+			tach->cmd_buf_type = CMD_NORM;
+		}
+
+		*buf_p = p; /* pass back pointer to current command position */
+		return (_strlen(p)); /* return length of current command */
+	}
+
+	*buf_p = buf; /* else not a chain, pass back buffer from _getline() */
+	return (r); /* return length of buffer from _getline() */
+}
+
+/**
+ * read_buf - reads a buffer
+ * @tach: parameter struct
+ * @bu: buffer
+ * @size: size
+ *
+ * Return: r
+ */
+ssize_t read_buf(info_t *tach, char *bu, size_t *size)
+{
+	ssize_t r = 0;
+
+	if (*size)
+		return (0);
+	r = read(tach->readfd, bu, READ_BUF_SIZE);
+	if (r >= 0)
+		*size = r;
+	return (r);
+}
+
+/**
+ * _getline - gets the next line of input from STDIN
+ * @tach: parameter struct
+ * @pitro: address of pointer to buffer, preallocated or NULL
+ * @leno: size of preallocated ptr buffer if not NULL
+ *
+ * Return: s
+ */
+int _getline(info_t *tach, char **pitro, size_t *leno)
+{
+	static char buf[READ_BUF_SIZE];
+	static size_t i, len;
+	size_t k;
+	ssize_t r = 0, s = 0;
+	char *p = NULL, *new_p = NULL, *c;
+
+	p = *pitro;
+	if (p && leno)
+		s = *leno;
+	if (i == len)
+		i = len = 0;
+
+	r = read_buf(tach, buf, &len);
+	if (r == -1 || (r == 0 && len == 0))
+		return (-1);
+
+	c = _strchr(buf + i, '\n');
+	k = c ? 1 + (unsigned int)(c - buf) : len;
+	new_p = _realloc(p, s, s ? s + k : k + 1);
+	if (!new_p) /* MALLOC FAILURE! */
+		return (p ? free(p), -1 : -1);
+
+	if (s)
+		_strncat(new_p, buf + i, k - i);
+	else
+		_strncpy(new_p, buf + i, k - i + 1);
+
+	s += k - i;
+	i = k;
+	p = new_p;
+
+	if (leno)
+		*leno = s;
+	*pitro = p;
+	return (s);
+}
+
+/**
+ * sigintHandler - blocks ctrl-C
+ * @s_num: the signal number
+ *
+ * Return: void
+ */
+void sigintHandler(__attribute__((unused))int s_num)
+{
+	_puts("\n");
+	_puts("$ ");
+	_putchar(BUF_FLUSH);
 }

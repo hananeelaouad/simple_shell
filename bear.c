@@ -1,92 +1,75 @@
 #include "shell.h"
 
 /**
- * _myenv - prints the current environment
- * @test: Structure containing potential arguments. Used to maintain
- *          constant function prototype.
- * Return: dima 0
- */
-int _myenv(info_t *test)
-{
-	print_list_str(test->env);
-	return (0);
-}
-
-/**
- * _getenv - gets the value of an environ variable
- * @test: Structure containing potential arguments. Used to maintain
- * @ism: env var name
+ * interactive - returns true if shell is interactive mode
+ * @tach: struct address
  *
- * Return: la valuer deyal dikchi li bghina 
+ * Return: 1 if interactive mode, 0 otherwise
  */
-char *_getenv(info_t *test, const char *ism)
+int interactive(info_t *tach)
 {
-	list_t *nodejs = test->env;
-	char *par;
-
-	while (nodejs)
-	{
-		par = starts_with(nodejs->str, ism);
-		if (par && *par)
-			return (par);
-		nodejs = nodejs->next;
-	}
-	return (NULL);
+	return (isatty(STDIN_FILENO) && tach->readfd <= 2);
 }
 
 /**
- * _mysetenv - Initialize a new environment variable,
- *             or modify an existing one
- * @test: Structure containing potential arguments. Used to maintain
- *        constant function prototype.
- *  Return: dima 0
+ * is_delim - checks if character is a delimeter
+ * @ci: the char to check
+ * @deliman: the delimeter string
+ * Return: 1 if true, 0 if false
  */
-int _mysetenv(info_t *test)
+int is_delim(char ci, char *deliman)
 {
-	if (test->argc != 3)
-	{
-		_eputs("Incorrect number of arguements\n");
+	while (*deliman)
+		if (*deliman++ == ci)
+			return (1);
+	return (0);
+}
+
+/**
+ *_isalpha - checks for alphabetic character
+ *@cio: The character to input
+ *Return: 1 if cio is alphabetic, 0 otherwise
+ */
+
+int _isalpha(int cio)
+{
+	if ((cio >= 'a' && cio <= 'z') || (cio >= 'A' && cio <= 'Z'))
 		return (1);
-	}
-	if (_setenv(test, test->argv[1], test->argv[2]))
+	else
 		return (0);
-	return (1);
 }
 
 /**
- * _myunsetenv - Remove an environment variable
- * @test: Structure containing potential arguments. Used to maintain
- *        constant function prototype.
- *  Return: dima 0
+ *_atoi - converts a string to an integer
+ *@ese: the string to be converted
+ *Return: 0 if no numbers in string, converted number otherwise
  */
-int _myunsetenv(info_t *test)
-{
-	int i;
 
-	if (test->argc == 1)
+int _atoi(char *ese)
+{
+	int i, sign = 1, flag = 0, output;
+	unsigned int result = 0;
+
+	for (i = 0;  ese[i] != '\0' && flag != 2; i++)
 	{
-		_eputs("Too few arguements.\n");
-		return (1);
+		if (ese[i] == '-')
+			sign *= -1;
+
+		if (ese[i] >= '0' && ese[i] <= '9')
+		{
+			flag = 1;
+			result *= 10;
+			result += (ese[i] - '0');
+		}
+		else if (flag == 1)
+			flag = 2;
 	}
-	for (i = 1; i <= test->argc; i++)
-		_unsetenv(test, test->argv[i]);
 
-	return (0);
+	if (sign == -1)
+		output = -result;
+	else
+		output = result;
+
+	return (output);
 }
 
-/**
- * populate_env_list - populates env linked list
- * @test: Structure containing potential arguments. Used to maintain
- *          constant function prototype.
- * Return: dima 0
- */
-int populate_env_list(info_t *test)
-{
-	list_t *nodejs = NULL;
-	size_t i;
-
-	for (i = 0; environ[i]; i++)
-		add_node_end(&nodejs, environ[i], 0);
-	test->env = nodejs;
-	return (0);
-}

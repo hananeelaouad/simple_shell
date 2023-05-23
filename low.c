@@ -1,140 +1,90 @@
 #include "shell.h"
 
 /**
- * _erratoi - converts a string to an integer
- * @sick: the string to be converted
- * Return: 0ila kan number string , converted number otherwise
- *       -1 ila kan ghalat 
+ * _myenv - prints the current environment
+ * @tach: Structure containing potential arguments. Used to maintain
+ *          constant function prototype.
+ * Return: Always 0
  */
-int _erratoi(char *sick)
+int _myenv(info_t *tach)
 {
-	int inter = 0;
-	unsigned long int rezulta = 0;
-
-	if (*sick == '+')
-		sick++; 
-	for (inter = 0;  sick[inter] != '\0'; inter++)
-	{
-		if (sick[inter] >= '0' && sick[inter] <= '9')
-		{
-			rezulta *= 10;
-			rezulta += (sick[inter] - '0');
-			if (rezulta > INT_MAX)
-				return (-1);
-		}
-		else
-			return (-1);
-	}
-	return (rezulta);
+	print_list_str(tach->env);
+	return (0);
 }
 
 /**
- * print_error - prints an error message
- * @maaloma: the parameter & return info struct
- * @ucl: string containing specified error type
- * Return: 0 if no numbers in string, converted number otherwise
- *        -1 on error
- */
-void print_error(info_t *maaloma, char *ucl)
-{
-	_eputs(maaloma->fname);
-	_eputs(": ");
-	print_d(maaloma->line_count, STDERR_FILENO);
-	_eputs(": ");
-	_eputs(maaloma->argv[0]);
-	_eputs(": ");
-	_eputs(ucl);
-}
-
-/**
- * print_d - function prints a decimal (integer) number (base 10)
- * @value: the input
- * @uel: the filedescriptor to write to
+ * _getenv - gets the value of an environ variable
+ * @tach: Structure containing potential arguments. Used to maintain
+ * @nom: env var name
  *
- * Return: number of characters printed
+ * Return: the value
  */
-int print_d(int value, int uel)
+char *_getenv(info_t *tach, const char *nom)
 {
-	int (*__putchar)(char) = _putchar;
-	int roma, sev = 0;
-	unsigned int _abs_, current;
+	list_t *nodejs = tach->env;
+	char *pu;
 
-	if (uel == STDERR_FILENO)
-		__putchar = _eputchar;
-	if (value < 0)
+	while (nodejs)
 	{
-		_abs_ = -input;
-		__putchar('-');
-		sev++;
+		pu = starts_with(nodejs->str, nom);
+		if (pu && *pu)
+			return (pu);
+		nodejs = nodejs->next;
 	}
-	else
-		_abs_ = input;
-	current = _abs_;
-	for (roma = 1000000000; roma > 1; roma /= 10)
-	{
-		if (_abs_ / roma)
-		{
-			__putchar('0' + current / roma);
-			sev++;
-		}
-		current %= i;
-	}
-	__putchar('0' + current);
-	sev++;
-
-	return (sev);
+	return (NULL);
 }
 
 /**
- * convert_number - converter function, a clone of itoa
- * @nemra: ra9em
- * @rma: 9a3ida
- * @raya: argument flags
- *
- * Return: string
+ * _mysetenv - Initialize a new environment variable,
+ *             or modify an existing one
+ * @tach:  prototype.
+ *  Return: dima 0
  */
-char *convert_number(long int nemra, int rma, int raya)
+int _mysetenv(info_t *tach)
 {
-	static char *list;
-	static char bff[50];
-	char alama = 0;
-	char *prot;
-	unsigned long non = nemra;
-
-	if (!(raya & CONVERT_UNSIGNED) && nemra < 0)
+	if (tach->argc != 3)
 	{
-		non = -nemra;
-		alama = '-';
-
+		_eputs("Incorrect number of arguements\n");
+		return (1);
 	}
-	list = raya & CONVERT_LOWERCASE ? "0123456789abcdef" : "0123456789ABCDEF";
-	prot = &bff[49];
-	*prot = '\0';
-
-	do	{
-		*--prot = list[n % rma];
-		non /= rma;
-	} while (non != 0);
-
-	if (alama)
-		*--prot = alama;
-	return (prot);
+	if (_setenv(tach, tach->argv[1], tach->argv[2]))
+		return (0);
+	return (1);
 }
 
 /**
- * remove_comments - function replaces first instance of '#' with '\0'
- * @buf: address of the string to modify
- *
- * Return: Always 0;
+ * _myunsetenv - Remove an environment variable
+ * @tach:  prototype.
+ *  Return: dima 0
  */
-void remove_comments(char *buffalo)
+int _myunsetenv(info_t *tach)
 {
 	int i;
 
-	for (i = 0; buffalo[i] != '\0'; i++)
-		if (buffalo[i] == '#' && (!i || buffalo[i - 1] == ' '))
-		{
-			buffalo[i] = '\0';
-			break;
-		}
+	if (tach->argc == 1)
+	{
+		_eputs("Too few arguements.\n");
+		return (1);
+	}
+	for (i = 1; i <= tach->argc; i++)
+		_unsetenv(tach, tach->argv[i]);
+
+	return (0);
+}
+
+/**
+ * populate_env_list - populates env linked list
+ * @tach: Structure containing potential arguments. Used to maintain
+ *          constant function prototype.
+ * Return: dima 0
+ */
+int populate_env_list(info_t *tach)
+{
+	list_t *nodejs = NULL;
+	size_t i;
+
+	for (i = 0; environ[i]; i++)
+		add_node_end(&nodejs, environ[i], 0);
+	tach->env = nodejs;
+	return (0);
 }

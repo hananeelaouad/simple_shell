@@ -3,121 +3,112 @@
 /**
  * _myhistory - displays the history list, one command by line, preceded
  *              with line numbers, starting at 0.
- * @maaloma: Structure containing potential arguments. Used to maintain
+ * @tach: Structure containing potential arguments. Used to maintain
  *        constant function prototype.
  *  Return: Always 0
  */
-int _myhistory(info_t *maaloma)
+int _myhistory(info_t *tach)
 {
-	print_list(maaloma->history);
+	print_list(tach->history);
 	return (0);
 }
 
 /**
  * unset_alias - sets alias to string
- * @test: parameter struct
- * @string: the string alias
+ * @tach: parameter struct
+ * @store: the string alias
  *
  * Return: Always 0 on success, 1 on error
  */
-int unset_alias(info_t *test, char *string)
+int unset_alias(info_t *tach, char *store)
 {
-	char *pop, c;
-	int retweet;
+	char *pi, ci;
+	int res;
 
-	pop = _strchr(string, '=');
-	if (!pop)
+	pi = _strchr(store, '=');
+	if (!pi)
 		return (1);
-	c = *pop;
-	*pop = 0;
-	retweeet = delete_node_at_index(&(test->alias),
-		get_node_index(test->alias, node_starts_with(test->alias, string, -1)));
-	*pop = c;
-	return (retweet);
+	ci = *pi;
+	*pi = 0;
+	res = delete_node_at_index(&(tach->alias),
+		get_node_index(tach->alias, node_starts_with(tach->alias, store, -1)));
+	*pi = ci;
+	return (res);
 }
-
-
 
 /**
  * set_alias - sets alias to string
- * @in: parameter struct
- * @sr: the string alias
+ * @tach: parameter struct
+ * @store: the string alias
  *
  * Return: Always 0 on success, 1 on error
  */
-int set_alias(info_t *in, char *sr)
+int set_alias(info_t *tach, char *store)
 {
-	char *pi;
+	char *poo;
 
-	pi = _strchr(sr, '=');
-	if (!pi)
+	poo = _strchr(store, '=');
+	if (!poo)
 		return (1);
-	if (!*++pi)
-		return (unset_alias(in, sr));
+	if (!*++poo)
+		return (unset_alias(tach, store));
 
-	unset_alias(in, sr);
-	return (add_node_end(&(in->alias), sr, 0) == NULL);
+	unset_alias(tach, store);
+	return (add_node_end(&(tach->alias), store, 0) == NULL);
 }
-
-
 
 /**
  * print_alias - prints an alias string
- * @node_khaz: the alias node
+ * @nodejs: the alias node
  *
  * Return: Always 0 on success, 1 on error
  */
-int print_alias(list_t *node_khaz)
+int print_alias(list_t *nodejs)
 {
-	char *pss = NULL, *a = NULL;
+	char *poo = NULL, *ai = NULL;
 
-	if (node_khaz)
+	if (nodejs)
 	{
-		pss = _strchr(node_khaz->str, '=');
-		for (a = node_khaz->str; a <= pss; a++)
-			_putchar(*a);
+		poo = _strchr(nodejs->str, '=');
+		for (ai = nodejs->str; ai <= poo; ai++)
+			_putchar(*ai);
 		_putchar('\'');
-		_puts(pss + 1);
+		_puts(poo + 1);
 		_puts("'\n");
 		return (0);
 	}
 	return (1);
 }
 
-
-
-
-
-
 /**
  * _myalias - mimics the alias builtin (man alias)
- * @ism: Structure containing potential arguments. Used to maintain
+ * @tach: Structure containing potential arguments. Used to maintain
  *          constant function prototype.
  *  Return: Always 0
  */
-int _myalias(info_t *ism)
+int _myalias(info_t *tach)
 {
 	int i = 0;
-	char *poque = NULL;
-	list_t *inne = NULL;
+	char *poi = NULL;
+	list_t *nodejs = NULL;
 
-	if (ism->argc == 1)
+	if (tach->argc == 1)
 	{
-		inne = ism->alias;
-		while (inne)
+		nodejs = tach->alias;
+		while (nodejs)
 		{
-			print_alias(inne);
-			inne = inne->next;
+			print_alias(nodejs);
+			nodejs = nodejs->next;
 		}
 		return (0);
 	}
-	for (i = 1; ism->argv[i]; i++)
+	for (i = 1; tach->argv[i]; i++)
 	{
-		poque = _strchr(ism->argv[i], '=');
-		if (p)
-			set_alias(ism, ism->argv[i]);
+		poi = _strchr(tach->argv[i], '=');
+		if (poi)
+			set_alias(tach, tach->argv[i]);
 		else
-			print_alias(inne_starts_with(ism->alias, info->argv[i], '='));
+			print_alias(node_starts_with(tach->alias, tach->argv[i], '='));
 	}
 
 	return (0);

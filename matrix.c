@@ -1,74 +1,140 @@
 #include "shell.h"
 
 /**
- * clear_info - initializes info_t struct
- * @ik: struct address
+ * _erratoi - converts a string to an integer
+ * @seen: the string to be converted
+ * Return: 0 if no numbers in string, converted number otherwise
+ *       -1 on error
  */
-void clear_info(info_t *ik)
-{
-	ik->arg = NULL;
-	ik->argv = NULL;
-	ik->path = NULL;
-	ik->argc = 0;
-}
-
-/**
- * set_info - initializes info_t struct
- * @ik: struct address
- * @avenu: argument vector
- */
-void set_info(info_t *ik, char **avenu)
+int _erratoi(char *seen)
 {
 	int i = 0;
+	unsigned long int res = 0;
 
-	ik->fname = avenu[0];
-	if (ik->arg)
+	if (*seen == '+')
+		seen++;  /* TODO: why does this make main return 255? */
+	for (i = 0;  seen[i] != '\0'; i++)
 	{
-		ik->argv = strtow(ik->arg, " \t");
-		if (!ik->argv)
+		if (seen[i] >= '0' && seen[i] <= '9')
 		{
-
-			ik->argv = malloc(sizeof(char *) * 2);
-			if (ik->argv)
-			{
-				ik->argv[0] = _strdup(ik->arg);
-				ik->argv[1] = NULL;
-			}
+			res *= 10;
+			res += (seen[i] - '0');
+			if (res > INT_MAX)
+				return (-1);
 		}
-		for (i = 0; ik->argv && ik->argv[i]; i++)
-			;
-		ik->argc = i;
-
-		replace_alias(ik);
-		replace_vars(ik);
+		else
+			return (-1);
 	}
+	return (res);
 }
 
 /**
- * free_info - frees info_t struct fields
- * @ik: struct address
- * @ever: true if freeing all fields
+ * print_error - prints an error message
+ * @tach: the parameter & return info struct
+ * @tesr: string containing specified error type
+ * Return: 0 if no numbers in string, converted number otherwise
+ *        -1 on error
  */
-void free_info(info_t *ik, int ever)
+void print_error(info_t *tach, char *tesr)
 {
-	ffree(ik->argv);
-	ik->argv = NULL;
-	ik->path = NULL;
-	if (ever)
+	_eputs(tach->fname);
+	_eputs(": ");
+	print_d(tach->line_count, STDERR_FILENO);
+	_eputs(": ");
+	_eputs(tach->argv[0]);
+	_eputs(": ");
+	_eputs(tesr);
+}
+
+/**
+ * print_d - function prints a decimal (integer) number (base 10)
+ * @value: the input
+ * @bet: the filedescriptor to write to
+ *
+ * Return: number of characters printed
+ */
+int print_d(int value, int bet)
+{
+	int (*__putchar)(char) = _putchar;
+	int i, count = 0;
+	unsigned int _abs_, current;
+
+	if (bet == STDERR_FILENO)
+		__putchar = _eputchar;
+	if (value < 0)
 	{
-		if (!ik->cmd_buf)
-			free(ik->arg);
-		if (ik->env)
-			free_list(&(ik->env));
-		if (ik->history)
-			free_list(&(ik->history));
-		if (ik->alias)
-			free_list(&(ik->alias));
-		ffree(ik->environ);
-			ik->environ = NULL;
-		bfree((void **)ik->cmd_buf);
-		if (ik->readfd > 2)
-			close(ik->readfd);
-		_putchar(BUF_FLUSH);
+		_abs_ = -value;
+		__putchar('-');
+		count++;
 	}
+	else
+		_abs_ = value;
+	current = _abs_;
+	for (i = 1000000000; i > 1; i /= 10)
+	{
+		if (_abs_ / i)
+		{
+			__putchar('0' + current / i);
+			count++;
+		}
+		current %= i;
+	}
+	__putchar('0' + current);
+	count++;
+
+	return (count);
+}
+
+/**
+ * convert_number - converter function, a clone of itoa
+ * @numero: number
+ * @bas: base
+ * @signes: argument signes
+ *
+ * Return: string
+ */
+char *convert_number(long int numero, int bas, int signes)
+{
+	static char *array;
+	static char buffer[50];
+	char sign = 0;
+	char *ptr;
+	unsigned long n = numero;
+
+	if (!(signes & CONVERT_UNSIGNED) && numero < 0)
+	{
+		n = -numero;
+		sign = '-';
+
+	}
+	array = signes & CONVERT_LOWERCASE ? "0123456789abcdef" : "0123456789ABCDEF";
+	ptr = &buffer[49];
+	*ptr = '\0';
+
+	do	{
+		*--ptr = array[n % bas];
+		n /= bas;
+	} while (n != 0);
+
+	if (sign)
+		*--ptr = sign;
+	return (ptr);
+}
+
+/**
+ * remove_comments - function replaces first instance of '#' with '\0'
+ * @bu: address of the string to modify
+ *
+ * Return: Always 0;
+ */
+void remove_comments(char *bu)
+{
+	int i;
+
+	for (i = 0; bu[i] != '\0'; i++)
+		if (bu[i] == '#' && (!i || bu[i - 1] == ' '))
+		{
+			bu[i] = '\0';
+			break;
+		}
 }
